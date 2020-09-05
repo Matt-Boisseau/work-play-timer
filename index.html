@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Work/Play Timer</title>
+		<style>
+body {
+	margin: 0;
+	background-color: #222;
+	color: #fff;
+}
+
+main {
+	height: 100vh;
+	width: 100vw;
+	display: flex;
+	flex-flow: column;
+	justify-content: center;
+	align-items: center;
+	font-family: sans-serif;
+	opacity: 0.5;
+}
+
+main.focused {
+	opacity: 1;
+}
+
+#timer {
+	font-size: 300%;
+	font-family: monospace;
+}
+
+#modeSelector {
+	margin: 50px 0;
+}
+		</style>
+	</head>
+	<body>
+		<main>
+			<span id="timer"></span>
+			<span id="timerLabel"></span>
+			<form id="modeSelector">
+				<input id="work" type="radio" name="mode" value="work">Work
+				<br>
+				<input id="play" type="radio" name="mode" value="play">Play
+				<br>
+				<input id="pause" type="radio" name="mode" value="pause" checked>Pause
+			</form>
+			<button id="reset" type="button">Reset</button>
+		</main>
+		<script>
+
+// mode determines whether the timer counts up, down, or not at all
+let mode = 0;
+const modes = {
+	'work': 1,
+	'play': -1,
+	'pause': 0
+}
+
+// elements to reference
+const elements = {
+	'timer': document.querySelector('#timer'),
+	'timerLabel': document.querySelector('#timerLabel'),
+	'modeSelector': document.querySelector('#modeSelector'),
+	'work': document.querySelector('#work'),
+	'play': document.querySelector('#play'),
+	'pause': document.querySelector('#pause'),
+	'reset': document.querySelector('#reset'),
+	'main': document.querySelector('main')
+}
+
+// time in ms
+let lastUpdate = Date.now();
+let time = 0;
+
+// interval used when app in focus
+let interval;
+let shortInterval = 1000 * 10; // 10 seconds
+let longInterval = 1000 * 60 * 5; // 5 minutes
+
+// save/load
+function save() {
+	localStorage.setItem('mode', mode);
+	localStorage.setItem('lastUpdate', lastUpdate);
+	localStorage.setItem('time', time);
+}
+function load() {
+	if (localStorage.getItem('mode')) {
+		mode = parseInt(localStorage.getItem('mode'));
+		updateRadioButtons();
+	}
+	if (localStorage.getItem('lastUpdate')) {
+		lastUpdate = parseInt(localStorage.getItem('lastUpdate'));
+	}
+	if (localStorage.getItem('time')) {
+		time = parseInt(localStorage.getItem('time'));
+	}
+}
+function reset() {
+	mode = 0;
+	lastUpdate = Date.now();
+	time = 0;
+	updateRadioButtons();
+	save();
+}
+
+function updateRadioButtons() {
+	let radioButtonId = Object.keys(modes).find(key => modes[key] === mode);
+	elements[radioButtonId].checked = true;
+}
+
+// compares last update with current time to update timer
+function updateTimer() {
+
+	time += (Date.now() - lastUpdate) * mode * 100;
+
+	elements.timerLabel.innerHTML = time > 0 ? 'worked' : 'played';
+
+	let minutes = Math.abs(time / 60000); // 60000ms = 1m
+	let hours = Math.floor(minutes / 60);
+	minutes = Math.floor(minutes % 60);
+
+	elements.timer.innerHTML = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+	lastUpdate = Date.now();
+
+	save();
+}
+
+// updates mode based on radio buttons
+elements.modeSelector.addEventListener('change', (e) => {
+	updateTimer();
+	mode = modes[e.target.value];
+});
+
+// reset button
+elements.reset.addEventListener('click', () => {
+	reset();
+	updateTimer();
+});
+
+// starts updating display on mouseover
+document.addEventListener('mouseenter', () => {
+	updateTimer();
+	clearInterval(interval);
+	interval = setInterval(updateTimer, shortInterval);
+	elements.main.classList.toggle('focused', true);
+});
+
+// stops updating display on mouseleave
+document.addEventListener('mouseleave', () => {
+	updateTimer();
+	clearInterval(interval);
+	interval = setInterval(updateTimer, longInterval);
+	elements.main.classList.toggle('focused', false);
+});
+
+// go time
+load();
+updateTimer();
+		</script>
+	</body>
+</html>
