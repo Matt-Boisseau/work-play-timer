@@ -112,7 +112,7 @@ function updateRadioButtons() {
 // compares last update with current time to update timer
 function updateTimer() {
 
-	time += (Date.now() - lastUpdate) * mode * 100;
+	time += (Date.now() - lastUpdate) * mode;
 
 	elements.timerLabel.innerHTML = time > 0 ? 'worked' : 'played';
 
